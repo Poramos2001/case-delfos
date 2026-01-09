@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, Query, HTTPException
 import json
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy import Column, Float, DateTime, select, inspect
+from sqlalchemy import Column, Float, DateTime, select, inspect, text
 from typing import List, Optional, Any, Dict
 
 
@@ -30,6 +30,8 @@ class WindData(Base):
     power = Column(Float)
     ambient_temperature = Column(Float)
 
+# Helper to validate column names securely
+VALID_COLUMNS = [c.key for c in inspect(WindData).mapper.column_attrs]
 
 # Dependency injection
 async def get_db():
@@ -40,8 +42,22 @@ async def get_db():
 # FastAPI App
 app = FastAPI(title="Wind Data API")
 
-# Helper to validate column names securely
-VALID_COLUMNS = [c.key for c in inspect(WindData).mapper.column_attrs]
+
+@app.get("/health")
+async def health_check(db: AsyncSession = Depends(get_db)):
+    try:
+        # Test the DB connection with simple query
+        await db.execute(text("SELECT 1"))
+        return {
+            "status": "online",
+            "database": "connected",
+            "timestamp": datetime.now()
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=503, 
+            detail=f"Database connection failed: {str(e)}"
+        )
 
 
 @app.get("/data", response_model=List[Dict[str, Any]])
