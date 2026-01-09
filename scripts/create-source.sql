@@ -1,3 +1,9 @@
+CREATE USER delfos WITH PASSWORD 'pass#delf';
+
+CREATE DATABASE "delfos-source";
+
+\c delfos-source;
+
 CREATE TABLE data (
     -- Column definitions
     timestamp timestamptz NOT NULL PRIMARY KEY, --timestamp with time zone

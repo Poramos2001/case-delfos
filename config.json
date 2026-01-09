@@ -1,0 +1,7 @@
+{
+    "username": "delfos",
+    "password": "pass#delf",
+    "host": "localhost",
+    "port": 5432,
+    "database": "delfos-source"
+}
