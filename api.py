@@ -24,7 +24,6 @@ Base = declarative_base()
 class WindData(Base):
     __tablename__ = "data"
 
-    # Matching your DDL
     timestamp = Column(DateTime(timezone=True), primary_key=True)
     wind_speed = Column(Float)
     power = Column(Float)
@@ -33,14 +32,13 @@ class WindData(Base):
 # Helper to validate column names securely
 VALID_COLUMNS = [c.key for c in inspect(WindData).mapper.column_attrs]
 
+app = FastAPI(title="Wind Data API")
+
+
 # Dependency injection
 async def get_db():
     async with SessionLocal() as session:
         yield session
-
-
-# FastAPI App
-app = FastAPI(title="Wind Data API")
 
 
 @app.get("/health")
