@@ -75,3 +75,9 @@ def extract(target_date_str: str, api_url: str):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         sys.exit(1)
+
+if __name__ == "__main__":
+    df = extract("02-01-2025","http://localhost:8000")
+    df.sort_values("timestamp", inplace=True)
+    print(df.head())
+    print(df.tail())
