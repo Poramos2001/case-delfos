@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 import httpx
 import logging
 import pandas as pd
@@ -32,8 +32,8 @@ def extract(target_date_str: str, api_url: str):
         sys.exit(1)
 
     # From 00:00:00 to 23:59:59 of target date
-    start_time = datetime.combine(target_date, time.min)
-    end_time = datetime.combine(target_date, time.max)
+    start_time = datetime.combine(target_date, time.min, tzinfo=timezone.utc)
+    end_time = datetime.combine(target_date, time.max, tzinfo=timezone.utc)
 
     params = {
         "start_time": start_time.isoformat(),
