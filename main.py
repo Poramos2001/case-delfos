@@ -1,14 +1,16 @@
 import argparse
 import logging
+import src.extract as extract
+from src.transform import resample_to_long_format
 
 # Set up logging
 logger = logging.getLogger('etl_logger')
 logger.setLevel(logging.DEBUG) 
 
-console_handler = logging.StreamHandler() #for the terminal
+console_handler = logging.StreamHandler() # for the terminal
 console_handler.setLevel(logging.INFO)
 
-file_handler = logging.FileHandler('wind_etl.log') #for the log file
+file_handler = logging.FileHandler('wind_etl.log') # for the log file
 file_handler.setLevel(logging.DEBUG)
 
 console_format = logging.Formatter('%(levelname)s: %(message)s')
@@ -24,12 +26,14 @@ logger.addHandler(file_handler)
 if __name__ == "__main__":
     API_URL = "http://localhost:8000"
 
-    parser = argparse.ArgumentParser(description="Aggregate wind data for a specific date.")
-    parser.add_argument(
-        "date", 
-        type=str, 
-        help="The date to extract in DD-MM-YYYY format"
-    )
+    # parser = argparse.ArgumentParser(description="Aggregate wind data for a specific date.")
+    # parser.add_argument(
+    #     "date", 
+    #     type=str, 
+    #     help="The date to extract in DD-MM-YYYY format"
+    # )
 
-    args = parser.parse_args()
-    # run_extraction(args.date)
+    # args = parser.parse_args()
+    df = extract.extract("02-01-2025", API_URL)
+    df = resample_to_long_format(df)
+    print(df.head())

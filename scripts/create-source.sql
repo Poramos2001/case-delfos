@@ -6,7 +6,7 @@ CREATE DATABASE "delfos-source";
 
 CREATE TABLE data (
     -- Column definitions
-    timestamp timestamptz NOT NULL PRIMARY KEY, --timestamp with time zone
+    timestamp TIMESTAMPTZ NOT NULL PRIMARY KEY, --timestamp with time zone
     wind_speed float,
     power float,
     ambient_temperature float,
