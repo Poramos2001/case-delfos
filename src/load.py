@@ -61,7 +61,7 @@ def ensure_database_and_tables(user, password, host, port, db_name='delfos-targe
         sys.exit(1)
 
     # Connect to the target database
-    target_url = f"postgresql+psycopg2://{user}:{password}@{host}/{db_name}"
+    target_url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db_name}"
     target_engine = create_engine(target_url)
 
     # Create tables if missing
@@ -128,7 +128,7 @@ def load_data(df, engine):
         logger.info(f"Successfully loaded {len(final_df)} rows into 'delfos-target'.")
     except IntegrityError as e:
         # This block catches the specific "UniqueViolation" / Duplicate Key error
-        logger.info("Notice: This data is already present in the database (Duplicate Key). Upload skipped.")
+        logger.warning("This data is already present in the database (Duplicate Key). Upload skipped.")
         logger.debug(f"IntegrityError details:\n {e}")
     except Exception as e:
         logger.error(f"Error during bulk load: {e}")
