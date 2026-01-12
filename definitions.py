@@ -10,6 +10,7 @@ from dagster import (
 from src.extract import extract_date_data
 from src.transform import resample_to_long_format
 from src.load import load_data, ensure_database_and_tables
+from logging_config import setup_orchestration_logging
 
 # --- 2. DEFINE RESOURCES (Replaces config.json) ---
 class APIResource(ConfigurableResource):
@@ -33,55 +34,52 @@ class PostgresResource(ConfigurableResource):
 daily_partitions = DailyPartitionsDefinition(start_date="2025-01-01")
 
 # --- 4. DEFINE ASSETS (Replaces the main execution flow) ---
-
 @asset(partitions_def=daily_partitions)
-def raw_wind_df(context: AssetExecutionContext, source_db_API: APIResource):
+def daily_etl_asset(context: AssetExecutionContext,
+                    source_db_API: APIResource,
+                    target_db: PostgresResource):
     """
-    Wraps 'extract_date_data'.
+    A combined asset that extracts, transforms, and loads data for a given date.
     """
-    # Dagster gives us the date in YYYY-MM-DD format
+
+    context.log.info("Starting ETL process...")
+
+    # Set up logging for the compute logs in dagster
+    setup_orchestration_logging()
+
+    # Date in YYYY-MM-DD format
     partition_date = context.partition_key 
-    
-    # If your function needs DD-MM-YYYY, we convert it here
-    # (Assuming partition_key is 2025-01-02)
+    # Convert to DD-MM-YYYY
     formatted_date = f"{partition_date[8:10]}-{partition_date[5:7]}-{partition_date[0:4]}"
     
-    context.log.info(f"Extracting for date: {formatted_date}")
+    context.log.info(f"Extracting wind and power data for date: {formatted_date}")
     
-    # CALL YOUR EXISTING FUNCTION
-    df = extract_date_data(formatted_date, source_db_API.api_url)
+    # Extract
+    raw_df = extract_date_data(formatted_date, source_db_API.api_url)
     
-    return df
+    if raw_df.empty:
+        context.log.warning("No data found for the given date. Skipping next steps.")
+        context.log.info(f"ETL completed for date: {formatted_date}")
+        return None
+    else:
+        context.log.info(f"Success! Extracted {len(raw_df)} rows.")
+        context.log.info(f"First rows of extracted data:\n{raw_df.head()}")
+        # Transform
+        context.log.info("Resampling data...")
+        long_df = resample_to_long_format(raw_df)
+        
+        # Load
+        context.log.info("Loading data to database...")
+        
+        engine = target_db.get_db_engine()
+        
+        load_data(long_df, engine)
+        
+        context.log.info("Load complete.")
+        context.log.info(f"ETL completed for date: {formatted_date}")
 
-@asset(partitions_def=daily_partitions)
-def processed_wind_df(context: AssetExecutionContext, raw_wind_df):
-    """
-    Wraps 'resample_to_long_format'.
-    Dagster automatically passes the output of 'raw_wind_df' as input here.
-    """
-    context.log.info("Resampling data...")
-    
-    # CALL YOUR EXISTING FUNCTION
-    long_df = resample_to_long_format(raw_wind_df)
-    
-    return long_df
-
-@asset(partitions_def=daily_partitions)
-def wind_data_table(context: AssetExecutionContext, target_db: PostgresResource, processed_wind_df):
-    """
-    Wraps 'load_data'.
-    """
-    context.log.info("Loading data to database...")
-    
-    # Get the engine from our resource
-    engine = target_db.get_db_engine()
-    
-    # CALL YOUR EXISTING FUNCTION
-    load_data(processed_wind_df, engine)
-    
-    context.log.info("Load complete.")
-    # We return None or metadata, as the data is now in the DB
-    return None
+        # We return None as the data is now in the DB
+        return None
 
 # --- 4. Define Job & Schedule ---
 
@@ -104,7 +102,7 @@ with open('config.json', 'r') as f:
     config_data = json.load(f)
 
 defs = Definitions(
-    assets=[raw_wind_df, processed_wind_df, wind_data_table],
+    assets=[daily_etl_asset],
     schedules=[etl_schedule],
     resources={
         "source_db_API": APIResource(

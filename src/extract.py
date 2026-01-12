@@ -2,7 +2,6 @@ from datetime import datetime, time, timezone
 import httpx
 import logging
 import pandas as pd
-import sys
 
 
 logger = logging.getLogger(__name__)
@@ -21,15 +20,17 @@ def check_api_health(client: httpx.Client, url: str):
         logger.error(f"API is offline. When reaching {url}, found error: {e}")
         return False
 
-    
-def extract_date_data(target_date_str: str, api_url: str):
 
+def date_to_params(target_date_str: str):
+    """
+    Converts a date string in DD-MM-YYYY format to API query parameters.
+    Parameters:
+        target_date_str (str): Date string in DD-MM-YYYY format.
+    Returns:
+        dict: Dictionary with 'start_time', 'end_time', and 'cols'.
+    """
     # Parse string into datetime object
-    try:
-        target_date = datetime.strptime(target_date_str, "%d-%m-%Y")
-    except ValueError:
-        logger.error(f"Error: Date '{target_date_str}' must be in DD-MM-YYYY format.")
-        sys.exit(1)
+    target_date = datetime.strptime(target_date_str, "%d-%m-%Y")
 
     # From 00:00:00 to 23:59:59 of target date
     start_time = datetime.combine(target_date, time.min, tzinfo=timezone.utc)
@@ -41,42 +42,36 @@ def extract_date_data(target_date_str: str, api_url: str):
         "cols": ["timestamp", "power", "wind_speed"] 
     }
 
-    try:
-        logger.info(f"Extracting data from {api_url}...")
+    return params
+    
+def extract_date_data(query_params: dict, api_url: str):
+    """
+    Extracts wind and power data from the API for a specific date.
+    Parameters:
+        query_params (dict): Dictionary with 'start_time', 'end_time', and 'cols'.
+        api_url (str): Base URL of the API.
+    Returns:
+        pd.DataFrame: DataFrame containing the extracted data.
+    """
+ 
+    with httpx.Client(timeout=10.0) as client:
+        if not check_api_health(client, api_url):
+            return None
         
-        with httpx.Client(timeout=10.0) as client:
-            if not check_api_health(client, api_url):
-                sys.exit(1)
-            
-            response = client.get(f"{api_url}/data", params=params)
-            response.raise_for_status() # check for errors (4xx or 5xx)
+        response = client.get(f"{api_url}/data", params=query_params)
+        response.raise_for_status() # check for errors (4xx or 5xx)
 
-        data = response.json()
-        
-        if not data:
-            logger.error("No data found for this time range.")
-            sys.exit(1)
-        else:
-            df = pd.DataFrame(data)
-            
-            logger.info(f"Success! Extracted {len(df)} rows.")
-            logger.info(f"First rows of extracted data:\n{df.head()}")
-            return df
+    data = response.json()
+    
+    if not data:
+        return pd.DataFrame()  # Return empty DataFrame if no data
+    else:
+        return pd.DataFrame(data)
 
-    except httpx.HTTPStatusError as e:
-        # Handles 4xx and 5xx errors specifically
-        logger.error(f"HTTP Error: {e.response.status_code} - {e.response.text}")
-        sys.exit(1)
-    except httpx.RequestError as e:
-        # Handles connection issues (DNS, timeout, refused connection)
-        logger.error(f"Connection Error: {e}")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
-        sys.exit(1)
 
 if __name__ == "__main__":
-    df = extract_date_data("02-01-2025","http://localhost:8000")
+    params = date_to_params("02-01-2025")
+    df = extract_date_data(params,"http://localhost:8000")
     df.sort_values("timestamp", inplace=True)
     print(df.head())
     print(df.tail())

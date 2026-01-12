@@ -2,9 +2,7 @@ import json
 import logging
 import pandas as pd
 from sqlalchemy import create_engine, text, Column, Integer, String, Float, DateTime, ForeignKey
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import declarative_base
-import sys
 
 
 logger = logging.getLogger(__name__)
@@ -30,49 +28,42 @@ class Data(Base):
     value = Column(Float)
 
 
-def ensure_database_and_tables(user, password, host, port, db_name='delfos-target'):
+def ensure_database(user, password, host, port, db_name='delfos-target'):
     """
-    1. Connects to default postgres DB to check if target DB exists.
-    2. Creates target DB if missing.
-    3. Connects to target DB and creates tables if missing.
-    4. Returns the engine for the target DB.
+    Ensures that the specified database exists; creates it if missing.
     """
     
-    logger.info("Ensuring database and tables exist...")
+    logger.info("Ensuring database exists...")
 
     # Connect to 'postgres' (maintenance DB) to manage databases
     default_url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/postgres"
     default_engine = create_engine(default_url, isolation_level="AUTOCOMMIT")
 
-    try:
-        with default_engine.connect() as conn:
-            # Check if database exists
-            result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname='{db_name}'"))
-            if not result.fetchone():
-                logger.info(f"Database '{db_name}' not found. Creating...")
-                conn.execute(text(f'CREATE DATABASE "{db_name}"'))
-                logger.info(f"Database '{db_name}' created successfully.")
-            else:
-                logger.info(f"Database '{db_name}' already exists.")
-    except Exception as e:
-        logger.error("Critical Error during DB check/creation.",
-                     " Check if the credentials in config.json are from a super user.")
-        logger.debug(f"Error details: {e}")
-        sys.exit(1)
+    with default_engine.connect() as conn:
+        # Check if database exists
+        result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname='{db_name}'"))
+        if not result.fetchone():
+            logger.info(f"Database '{db_name}' not found. Creating...")
+            conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+            logger.info(f"Database '{db_name}' created successfully.")
+        else:
+            logger.info(f"Database '{db_name}' already exists.")
 
+
+def ensure_tables(user, password, host, port, db_name='delfos-target'):
+    """
+    Ensures that the required tables exist in the database and returns the engine.
+    """
     # Connect to the target database
     target_url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db_name}"
     target_engine = create_engine(target_url)
 
     # Create tables if missing
-    try:
-        Base.metadata.create_all(target_engine) # skips existing tables automatically
-        logger.info("Schema validation complete (tables created if missing).")
-    except Exception as e:
-        logger.error(f"Error creating schema: {e}")
-        sys.exit(1)
+    Base.metadata.create_all(target_engine) # skips existing tables automatically
+    logger.info("Schema validation complete (tables created if missing).")
 
     return target_engine
+    
 
 
 def load_data(df, engine):
@@ -80,11 +71,6 @@ def load_data(df, engine):
     Takes a long-format DataFrame (timestamp, name, value),
     upserts new signal names, maps them to IDs, and loads data.
     """
-    logger.info("Loading data into the database...")
-
-    if df.empty:
-        logger.error("DataFrame is empty. There is no data to load.")
-        sys.exit(1)
 
     # Ensure all names are in the 'signal' table
     unique_names = df['name'].unique()
@@ -116,23 +102,15 @@ def load_data(df, engine):
 
     # Bulk Upload
     # method='multi' allows inserting multiple rows in a single SQL statement (faster)
-    try:
-        final_df.to_sql(
-            'data', 
-            engine, 
-            if_exists='append', 
-            index=False, 
-            chunksize=5000, 
-            method='multi' 
-        )
-        logger.info(f"Successfully loaded {len(final_df)} rows into 'delfos-target'.")
-    except IntegrityError as e:
-        # This block catches the specific "UniqueViolation" / Duplicate Key error
-        logger.warning("This data is already present in the database (Duplicate Key). Upload skipped.")
-        logger.debug(f"IntegrityError details:\n {e}")
-    except Exception as e:
-        logger.error(f"Error during bulk load: {e}")
-        sys.exit(1)
+    final_df.to_sql(
+        'data', 
+        engine, 
+        if_exists='append', 
+        index=False, 
+        chunksize=5000, 
+        method='multi' 
+    )
+    return final_df
 
 
 if __name__ == "__main__":
@@ -144,7 +122,8 @@ if __name__ == "__main__":
     host = DATABASE_CONFIG['host']
     port = DATABASE_CONFIG['port']
 
-    db_engine = ensure_database_and_tables(user, passwd, host, port)
+    ensure_database(user, passwd, host, port)
+    db_engine = ensure_tables(user, passwd, host, port)
     
     if db_engine:
         # Simulate Data 
