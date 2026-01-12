@@ -10,10 +10,6 @@ from src.transform import resample_10minute_blocks, pivot_to_long_format
 import sys
 
 
-setup_script_logging()
-logger = logging.getLogger(__name__)
-
-
 def error_handling_extraction(params):
     """
     Extracts data with error handling for HTTP requests.
@@ -22,7 +18,7 @@ def error_handling_extraction(params):
         df = extract_date_data(params, API_URL)
 
         if df is None:
-            sys.exit(1) # DB health check failed (falar pra checar os logs no dagster)
+            sys.exit(1) # DB health check failed
         if df.empty:
             logger.warning("No data found for the given date.")
             sys.exit(0)  # Exit gracefully if no data
@@ -41,6 +37,9 @@ def error_handling_extraction(params):
         logger.error(f"Data extraction failed: {e}")
         sys.exit(1)
 
+
+setup_script_logging()
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     logger.info("Starting ETL process...")
