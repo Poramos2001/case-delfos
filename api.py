@@ -12,7 +12,7 @@ with open('config.json', 'r') as f:
     DATABASE_CONFIG = json.load(f)
 
 DATABASE_URL = f"postgresql+asyncpg://{DATABASE_CONFIG['username']}:{DATABASE_CONFIG['password']}@" \
-           f"{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"
+           f"{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/delfos-source"
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)

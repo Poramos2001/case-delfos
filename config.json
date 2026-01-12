@@ -1,7 +1,6 @@
 {
-    "username": "delfos",
-    "password": "pass#delf",
+    "username": "postgres",
+    "password": "postgres",
     "host": "localhost",
-    "port": 5432,
-    "database": "delfos-source"
+    "port": 5432
 }
