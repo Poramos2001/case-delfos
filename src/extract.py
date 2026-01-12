@@ -54,13 +54,13 @@ def extract_date_data(target_date_str: str, api_url: str):
         data = response.json()
         
         if not data:
-            logger.warning("No data found for this time range.")
+            logger.error("No data found for this time range.")
             sys.exit(1)
         else:
             df = pd.DataFrame(data)
             
             logger.info(f"Success! Extracted {len(df)} rows.")
-            logger.info(df.head())
+            logger.info(f"First rows of extracted data:\n{df.head()}")
             return df
 
     except httpx.HTTPStatusError as e:
