@@ -95,7 +95,6 @@ def load_data(df, engine):
     df['signal_id'] = df['name'].map(name_to_id_map)
 
     final_df = df[['timestamp', 'signal_id', 'value']]
-
     # Bulk Upload
     # method='multi' allows inserting multiple rows in a single SQL statement (faster)
     try:
@@ -132,5 +131,4 @@ if __name__ == "__main__":
             'value': [22.5, 23.0, 45.1, 1.2, 22.8]
         })
         
-        # 4. Load Data
         load_data(dummy_df, db_engine)

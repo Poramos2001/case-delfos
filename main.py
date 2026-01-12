@@ -47,6 +47,6 @@ if __name__ == "__main__":
     df = extract_date_data(args.date, API_URL)
     long_df = resample_to_long_format(df)
     print(long_df)
-    # db_engine = ensure_database_and_tables(user, passwd, host, port)
-    # load_data(long_df, db_engine)
+    db_engine = ensure_database_and_tables(user, passwd, host, port)
+    load_data(long_df, db_engine)
     

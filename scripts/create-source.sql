@@ -33,11 +33,3 @@ FROM
         '2025-01-11 00:00:00'::timestamptz, --stop
         '1 minute'::interval                --step
     ) AS ts;
-
--- API user configuration --
-
-CREATE USER delfos WITH PASSWORD 'pass#delf';
-
-GRANT CONNECT ON DATABASE "delfos-source" TO delfos;
-GRANT USAGE ON SCHEMA public TO delfos;
-GRANT SELECT ON TABLE data TO delfos;
