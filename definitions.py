@@ -1,19 +1,18 @@
-import json
 from dagster import (
-    asset, Definitions, ConfigurableResource, 
-    DailyPartitionsDefinition, AssetExecutionContext,
-    define_asset_job, ScheduleDefinition
-)
-
-# --- 1. IMPORT YOUR EXISTING LOGIC ---
+    asset, AssetExecutionContext, AssetSelection,
+    build_schedule_from_partitioned_job, ConfigurableResource, 
+    DailyPartitionsDefinition, define_asset_job, Definitions
+    )
+import json
+import logging
+from logging_config import setup_orchestration_logging
 from sqlalchemy.exc import IntegrityError
 from src.extract import extract_date_data, date_to_params
 from src.load import ensure_database, ensure_tables, load_data
 from src.transform import resample_10minute_blocks, pivot_to_long_format
-from logging_config import setup_orchestration_logging
-import logging
 
-# --- 2. DEFINE RESOURCES (Replaces config.json) ---
+
+# --- DEFINE RESOURCES ---
 class APIResource(ConfigurableResource):
     api_url: str
 
@@ -32,10 +31,12 @@ class PostgresResource(ConfigurableResource):
             self.username, self.password, self.host, self.port, self.db_name
         )
 
-# --- 3. DEFINE PARTITIONS (Replaces argparse) ---
+
+# --- DEFINE PARTITIONS ---
 daily_partitions = DailyPartitionsDefinition(start_date="2025-01-01")
 
-# --- 4. DEFINE ASSETS (Replaces the main execution flow) ---
+
+# --- DEFINE ASSETS ---
 @asset(partitions_def=daily_partitions)
 def daily_etl_asset(context: AssetExecutionContext,
                     source_db_API: APIResource,
@@ -109,21 +110,20 @@ def daily_etl_asset(context: AssetExecutionContext,
 
     return None
 
-# --- 4. Define Job & Schedule ---
 
-# A job that targets our specific asset
+# --- DEFINE JOB & SCHEDULE ---
 etl_job = define_asset_job(
-    name="daily_etl_job",
-    selection="data_transfer_asset"
+    name="daily_wind_power_etl_job",
+    selection=AssetSelection.assets(daily_etl_asset)
 )
-
-# A schedule that runs the job every day at midnight
-etl_schedule = ScheduleDefinition(
+etl_schedule = build_schedule_from_partitioned_job(
     job=etl_job,
-    cron_schedule="0 0 * * *", # Run at 00:00 daily
+    cron_schedule="0 2 * * *", 
+    description="Runs at 2 AM daily, processing the previous day's data.",
+    minute_of_hour=0,
 )
 
-# --- 5. BIND IT ALL TOGETHER ---
+# --- FINAL DEFINITIONS ---
 
 # Load config once (optional, or pass via env vars)
 with open('config.json', 'r') as f:
