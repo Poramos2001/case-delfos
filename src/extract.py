@@ -22,7 +22,7 @@ def check_api_health(client: httpx.Client, url: str):
         return False
 
     
-def extract(target_date_str: str, api_url: str):
+def extract_date_data(target_date_str: str, api_url: str):
 
     # Parse string into datetime object
     try:
@@ -76,7 +76,7 @@ def extract(target_date_str: str, api_url: str):
         sys.exit(1)
 
 if __name__ == "__main__":
-    df = extract("02-01-2025","http://localhost:8000")
+    df = extract_date_data("02-01-2025","http://localhost:8000")
     df.sort_values("timestamp", inplace=True)
     print(df.head())
     print(df.tail())

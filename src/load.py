@@ -49,7 +49,7 @@ def ensure_database_and_tables(user, password, host, port, db_name='delfos-targe
                 print(f"Database '{db_name}' already exists.")
     except Exception as e:
         print(f"Critical Error during DB check/creation: {e}")
-        return None
+        sys.exit(1)
 
     # Connect to the target database
     target_url = f"postgresql+psycopg2://{user}:{password}@{host}/{db_name}"
@@ -61,12 +61,12 @@ def ensure_database_and_tables(user, password, host, port, db_name='delfos-targe
         print("Schema validation complete (tables created if missing).")
     except Exception as e:
         print(f"Error creating schema: {e}")
-        return None
+        sys.exit(1)
 
     return target_engine
 
 
-def load_data_to_db(df, engine):
+def load_data(df, engine):
     """
     Takes a long-format DataFrame (timestamp, name, value),
     upserts new signal names, maps them to IDs, and loads data.
@@ -133,4 +133,4 @@ if __name__ == "__main__":
         })
         
         # 4. Load Data
-        load_data_to_db(dummy_df, db_engine)
+        load_data(dummy_df, db_engine)
