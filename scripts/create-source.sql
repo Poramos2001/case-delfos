@@ -1,3 +1,6 @@
+-- Set the display timezone for the current session only 
+SET TIMEZONE='UTC';
+
 -- Database and table configuration --
 
 CREATE DATABASE "delfos-source";
@@ -29,7 +32,7 @@ SELECT
     (random()*50 - 10)::numeric(5,2) AS ambient_temperature
 FROM
     generate_series(
-        '2025-01-01 00:00:00'::timestamptz, --start
-        '2025-01-11 00:00:00'::timestamptz, --stop
+        '2026-01-05 00:00:00'::timestamptz, --start
+        '2026-01-15 00:00:00'::timestamptz, --stop
         '1 minute'::interval                --step
     ) AS ts;

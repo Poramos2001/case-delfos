@@ -1,7 +1,7 @@
 from dagster import (
     asset, AssetExecutionContext, AssetSelection,
     build_schedule_from_partitioned_job, ConfigurableResource, 
-    DailyPartitionsDefinition, define_asset_job, Definitions
+    DailyPartitionsDefinition, define_asset_job, Definitions, EnvVar
     )
 import json
 import logging
@@ -118,9 +118,9 @@ etl_job = define_asset_job(
 )
 etl_schedule = build_schedule_from_partitioned_job(
     job=etl_job,
-    cron_schedule="0 2 * * *", 
-    description="Runs at 2 AM daily, processing the previous day's data.",
+    hour_of_day=2, 
     minute_of_hour=0,
+    description="Runs at 2 AM daily, processing the previous day's data."
 )
 
 # --- FINAL DEFINITIONS ---
@@ -134,14 +134,14 @@ defs = Definitions(
     schedules=[etl_schedule],
     resources={
         "source_db_API": APIResource(
-            api_url="http://localhost:8000"
+            api_url=EnvVar("SOURCE_API_URL")
         ),
         "target_db": PostgresResource(
-            username=config_data['username'],
-            password=config_data['password'],
-            host=config_data['host'],
-            port=config_data['port'],
-            db_name="delfos-target"
+            username=EnvVar("PG_USER"),
+            password=EnvVar("PG_PASSWORD"),
+            host=EnvVar("PG_HOST"),
+            port=EnvVar("PG_PORT"),
+            db_name=EnvVar("PG_DB")
         )
     }
 )

@@ -3,6 +3,7 @@ import httpx
 import json
 import logging
 from logging_config import setup_script_logging
+import os
 from sqlalchemy.exc import IntegrityError
 from src.extract import extract_date_data, date_to_params
 from src.load import ensure_database, ensure_tables, load_data
@@ -59,10 +60,10 @@ if __name__ == "__main__":
         logger.error(f"Missing required config fields: {', '.join(missing_keys)}")
         sys.exit(1)
 
-    user = DATABASE_CONFIG['username']
-    passwd = DATABASE_CONFIG['password'] 
-    host = DATABASE_CONFIG['host']
-    port = DATABASE_CONFIG['port']
+    user = os.getenv("PG_USER")
+    passwd = os.getenv("PG_PASSWORD")
+    host = os.getenv("PG_HOST")
+    port = int(os.getenv("PG_PORT"))
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Aggregate wind data for a specific date.")
