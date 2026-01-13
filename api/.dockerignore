@@ -1,0 +1,23 @@
+# 1. Security: Never copy secrets into the image
+.env
+*.pem
+secrets.json
+
+# 2. Python Junk: Don't copy compiled bytecode
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 3. Environment: Don't copy your local virtual environment
+.venv
+venv
+env
+
+# 4. OS Junk
+.DS_Store
+Thumbs.db
+
+# 5. Git (saves space)
+.git
+.gitignore
