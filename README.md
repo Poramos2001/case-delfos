@@ -5,7 +5,7 @@ precisa ter um super user e botar o login e senha dele no config.json
 - fazer o job e schedule
 - containerizo com docker
 
-```
+```bash
 # Source API Configuration
 SOURCE_API_URL=https://api.energy-source.com/v1/
 SOURCE_API_KEY=your_secret_api_token_123
@@ -16,4 +16,11 @@ PG_PASSWORD=super_secure_password
 PG_DB=delfos-target
 PG_HOST=localhost
 PG_PORT=5432
+```
+
+```bash
+dagster dev -f definitions.py
+```
+```bash
+uvicorn api:app --port 8000
 ```

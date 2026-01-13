@@ -5,7 +5,7 @@ import logging
 from logging_config import setup_script_logging
 import os
 from sqlalchemy.exc import IntegrityError
-from src.extract import extract_date_data, date_to_params
+from src.extract import check_api_health, date_to_params, extract_date_data
 from src.load import ensure_database, ensure_tables, load_data
 from src.transform import resample_10minute_blocks, pivot_to_long_format
 import sys
@@ -18,8 +18,6 @@ def error_handling_extraction(params):
     try:
         df = extract_date_data(params, API_URL)
 
-        if df is None:
-            sys.exit(1) # DB health check failed
         if df.empty:
             logger.warning("No data found for the given date.")
             sys.exit(0)  # Exit gracefully if no data
@@ -87,6 +85,9 @@ if __name__ == "__main__":
 
     # Extract
     logger.info(f"Extracting data from {API_URL}...")
+
+    if not check_api_health(httpx.Client(timeout=10.0), API_URL):
+        sys.exit(1)
 
     df = error_handling_extraction(params)
     

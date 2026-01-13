@@ -54,10 +54,7 @@ def extract_date_data(query_params: dict, api_url: str):
         pd.DataFrame: DataFrame containing the extracted data.
     """
  
-    with httpx.Client(timeout=10.0) as client:
-        if not check_api_health(client, api_url):
-            return None
-        
+    with httpx.Client(timeout=10.0) as client: 
         response = client.get(f"{api_url}/data", params=query_params)
         response.raise_for_status() # check for errors (4xx or 5xx)
 

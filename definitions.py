@@ -3,9 +3,11 @@ from dagster import (
     build_schedule_from_partitioned_job, ConfigurableResource, 
     DailyPartitionsDefinition, define_asset_job, Definitions, EnvVar
     )
+import httpx
 import json
 import logging
 from logging_config import setup_orchestration_logging
+import os
 from sqlalchemy.exc import IntegrityError
 from src.extract import extract_date_data, date_to_params
 from src.load import ensure_database, ensure_tables, load_data
@@ -33,7 +35,7 @@ class PostgresResource(ConfigurableResource):
 
 
 # --- DEFINE PARTITIONS ---
-daily_partitions = DailyPartitionsDefinition(start_date="2025-01-01")
+daily_partitions = DailyPartitionsDefinition(start_date="2026-01-01")
 
 
 # --- DEFINE ASSETS ---
@@ -63,12 +65,16 @@ def daily_etl_asset(context: AssetExecutionContext,
     
     # Extract
     context.log.info(f"Extracting data from {source_db_API.api_url}...")
-    raw_df = extract_date_data(params, source_db_API.api_url)
 
-    if raw_df is None:
-        context.log.error("Extraction failed due to API or database health check failure.")
-        context.log.error("Please check the compute logs for more details.")
-        return None
+    with httpx.Client(timeout=10.0) as client:
+        response = client.get(f"{source_db_API.api_url}/health")
+        if response.status_code == 200:
+            context.log.debug("API and Database are healthy. Starting extraction...")
+            raw_df = extract_date_data(params, source_db_API.api_url)
+        else:
+            context.log.error(f"API is up but unhealthy: {response.json()}")
+            context.log.error("Extraction failed due to API or database health check failure.")
+            raise Exception("API did not return 200.")
     
     if raw_df.empty:
         context.log.warning("No data found for the given date. Skipping next steps.")
@@ -118,8 +124,8 @@ etl_job = define_asset_job(
 )
 etl_schedule = build_schedule_from_partitioned_job(
     job=etl_job,
-    hour_of_day=2, 
-    minute_of_hour=0,
+    hour_of_day=0, 
+    minute_of_hour=8,
     description="Runs at 2 AM daily, processing the previous day's data."
 )
 
@@ -140,7 +146,7 @@ defs = Definitions(
             username=EnvVar("PG_USER"),
             password=EnvVar("PG_PASSWORD"),
             host=EnvVar("PG_HOST"),
-            port=EnvVar("PG_PORT"),
+            port=int(os.getenv("PG_PORT")), # read port as int
             db_name=EnvVar("PG_DB")
         )
     }
