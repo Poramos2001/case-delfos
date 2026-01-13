@@ -124,8 +124,8 @@ etl_job = define_asset_job(
 )
 etl_schedule = build_schedule_from_partitioned_job(
     job=etl_job,
-    hour_of_day=0, 
-    minute_of_hour=8,
+    hour_of_day=2, 
+    minute_of_hour=0,
     description="Runs at 2 AM daily, processing the previous day's data."
 )
 
