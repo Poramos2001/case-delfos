@@ -1,6 +1,5 @@
 import argparse
 import httpx
-import json
 import logging
 from etl.src.logging_config import setup_script_logging
 import os
@@ -44,24 +43,12 @@ if __name__ == "__main__":
     logger.info("Starting ETL process...")
 
     API_URL = os.getenv("SOURCE_API_URL")
-    REQUIRED_KEYS = {'username', 'password', 'host', 'port'}
 
     # Get DB connection credentials
-    with open('config.json', 'r') as f:
-        DATABASE_CONFIG = json.load(f)
-
-    logger.debug(f"Database config loaded: {DATABASE_CONFIG.keys()}")
-
-    missing_keys = REQUIRED_KEYS - set(DATABASE_CONFIG.keys())
-
-    if missing_keys:
-        logger.error(f"Missing required config fields: {', '.join(missing_keys)}")
-        sys.exit(1)
-
-    user = os.getenv("PG_USER")
-    passwd = os.getenv("PG_PASSWORD")
-    host = os.getenv("PG_HOST")
-    port = int(os.getenv("PG_PORT"))
+    user = os.getenv("DB_USER")
+    passwd = os.getenv("DB_PASSWORD")
+    host = os.getenv("TARGET_HOST")
+    port = int(os.getenv("DB_PORT"))
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Aggregate wind data for a specific date.")

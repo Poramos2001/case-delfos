@@ -1,8 +1,8 @@
 -- Database and table configuration --
 
-CREATE DATABASE "delfos-source";
+CREATE DATABASE "delfos_source";
 
-\c delfos-source;
+\c delfos_source;
 
 CREATE TABLE data (
     -- Column definitions

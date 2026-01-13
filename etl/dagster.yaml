@@ -1,0 +1,44 @@
+# 1. Store the run history (metadata about jobs)
+run_storage:
+  module: dagster_postgres.run_storage
+  class: PostgresRunStorage
+  config:
+    postgres_db:
+      hostname:
+        env: TARGET_DB_HOST  # Uses the environment variable from docker-compose
+      username:
+        env: TARGET_DB_USER
+      password:
+        env: TARGET_DB_PASSWORD
+      db_name: "postgres"
+      port: 5432
+
+# 2. Store the event logs (step-by-step logs of what happened)
+event_log_storage:
+  module: dagster_postgres.event_log_storage
+  class: PostgresEventLogStorage
+  config:
+    postgres_db:
+      hostname:
+        env: TARGET_DB_HOST
+      username:
+        env: TARGET_DB_USER
+      password:
+        env: TARGET_DB_PASSWORD
+      db_name: "postgres"
+      port: 5432
+
+# 3. Store the schedule state (is the schedule on or off?)
+schedule_storage:
+  module: dagster_postgres.schedule_storage
+  class: PostgresScheduleStorage
+  config:
+    postgres_db:
+      hostname:
+        env: TARGET_DB_HOST
+      username:
+        env: TARGET_DB_USER
+      password:
+        env: TARGET_DB_PASSWORD
+      db_name: "postgres"
+      port: 5432

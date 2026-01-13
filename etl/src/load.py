@@ -28,7 +28,7 @@ class Data(Base):
     value = Column(Float)
 
 
-def ensure_database(user, password, host, port, db_name='delfos-target'):
+def ensure_database(user, password, host, port, db_name='delfos_target'):
     """
     Ensures that the specified database exists; creates it if missing.
     """
@@ -50,7 +50,7 @@ def ensure_database(user, password, host, port, db_name='delfos-target'):
             logger.info(f"Database '{db_name}' already exists.")
 
 
-def ensure_tables(user, password, host, port, db_name='delfos-target'):
+def ensure_tables(user, password, host, port, db_name='delfos_target'):
     """
     Ensures that the required tables exist in the database and returns the engine.
     """

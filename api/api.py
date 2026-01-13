@@ -1,6 +1,6 @@
 from datetime import datetime
 from fastapi import FastAPI, Depends, Query, HTTPException
-import json
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, Float, DateTime, select, inspect, text
@@ -8,11 +8,12 @@ from typing import List, Optional, Any, Dict
 
 
 # Database configuration
-with open('config.json', 'r') as f:
-    DATABASE_CONFIG = json.load(f)
+user = os.getenv("DB_USER")
+passwd = os.getenv("DB_PASSWORD")
+host = os.getenv("SOURCE_HOST")
+port = int(os.getenv("DB_PORT"))
 
-DATABASE_URL = f"postgresql+asyncpg://{DATABASE_CONFIG['username']}:{DATABASE_CONFIG['password']}@" \
-           f"{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/delfos-source"
+DATABASE_URL = f"postgresql+asyncpg://{user}:{passwd}@{host}:{port}/delfos_source"
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)

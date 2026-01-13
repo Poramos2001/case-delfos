@@ -1,0 +1,5 @@
+fastapi                0.128.0
+sqlalchemy             2.0.45
+typing-extensions      4.15.0
+typing-inspection      0.4.2
+uvicorn                0.40.0

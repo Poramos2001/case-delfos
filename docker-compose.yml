@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # Service 1: Source Database
+  source_db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: delfos_source
+    volumes:
+      # BIND MOUNT: Maps a file from the computer to the container.
+      # Any SQL file put in /docker-entrypoint-initdb.d/ runs automatically on first startup.
+      - ./scripts/create-source.sql:/docker-entrypoint-initdb.d/create-source.sql
+      
+      # NAMED VOLUME: Persists the actual database files.
+      - postgres_source_data:/var/lib/postgresql/data
+    networks:
+      - etl_network
+
+  # Service 2: Target Database (Server)
+  target_db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      # A default DB is created, but your python script can create specific ones
+      POSTGRES_DB: postgres 
+    volumes:
+      - postgres_target_data:/var/lib/postgresql/data
+    networks:
+      - etl_network
+
+  # Service 3: FastAPI App
+  fastapi:
+    build: ./api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@source_db:5432/delfos_source
+    depends_on:
+      - source_db
+    networks:
+      - etl_network
+
+  # Service 4: Dagster ETL
+  dagster:
+    build: ./etl
+    ports:
+      - "3000:3000"
+    environment:
+      # Point to the fastapi service name
+      API_URL: http://fastapi:8000
+      # Point to the target_db service name
+      TARGET_DB_HOST: target_db
+      TARGET_DB_USER: ${DB_USER}
+      TARGET_DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - fastapi
+      - target_db
+    volumes:
+      # Persist Dagster run history
+      - dagster_data:/opt/dagster/dagster_home
+    networks:
+      - etl_network
+
+# Define persistent volumes so data isn't lost on restart
+volumes:
+  postgres_source_data:
+  postgres_target_data:
+  dagster_data:
+
+# Define a shared network
+networks:
+  etl_network:
+    driver: bridge

@@ -143,11 +143,11 @@ defs = Definitions(
             api_url=EnvVar("SOURCE_API_URL")
         ),
         "target_db": PostgresResource(
-            username=EnvVar("PG_USER"),
-            password=EnvVar("PG_PASSWORD"),
-            host=EnvVar("PG_HOST"),
-            port=int(os.getenv("PG_PORT")), # read port as int
-            db_name=EnvVar("PG_DB")
+            username=EnvVar("DB_USER"),
+            password=EnvVar("DB_PASSWORD"),
+            host=EnvVar("TARGET_HOST"),
+            port=int(os.getenv("DB_PORT")), # read port as int
+            db_name=EnvVar("TARGET_DB")
         )
     }
 )
