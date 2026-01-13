@@ -6,7 +6,7 @@ from dagster import (
 import httpx
 import json
 import logging
-from logging_config import setup_orchestration_logging
+from etl.src.logging_config import setup_orchestration_logging
 import os
 from sqlalchemy.exc import IntegrityError
 from src.extract import extract_date_data, date_to_params

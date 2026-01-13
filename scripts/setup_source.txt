@@ -1,6 +1,0 @@
-psql
-CREATE DATABASE "delfos-source";
-\q
-psql -d 'delfos-source' -f create-source.sql
-psql -f create-source.sql
-## criar o usuario com senha q tá no config

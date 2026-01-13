@@ -2,7 +2,7 @@ import argparse
 import httpx
 import json
 import logging
-from logging_config import setup_script_logging
+from etl.src.logging_config import setup_script_logging
 import os
 from sqlalchemy.exc import IntegrityError
 from src.extract import check_api_health, date_to_params, extract_date_data
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 if __name__ == "__main__":
     logger.info("Starting ETL process...")
 
-    API_URL = "http://localhost:8000"
+    API_URL = os.getenv("SOURCE_API_URL")
     REQUIRED_KEYS = {'username', 'password', 'host', 'port'}
 
     # Get DB connection credentials
