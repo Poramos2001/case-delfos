@@ -1,11 +1,11 @@
 import argparse
 import httpx
 import logging
-from etl.src.logging_config import setup_script_logging
 import os
 from sqlalchemy.exc import IntegrityError
 from src.extract import check_api_health, date_to_params, extract_date_data
 from src.load import ensure_database, ensure_tables, load_data
+from src.logging_config import setup_script_logging
 from src.transform import resample_10minute_blocks, pivot_to_long_format
 import sys
 

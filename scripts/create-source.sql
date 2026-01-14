@@ -1,10 +1,5 @@
--- Database and table configuration --
-
-CREATE DATABASE "delfos_source";
-
-\c delfos_source;
-
-CREATE TABLE data (
+-- Table configuration (database in docker-compose.yml) --
+CREATE TABLE IF NOT EXISTS data (
     -- Column definitions
     timestamp TIMESTAMPTZ NOT NULL PRIMARY KEY, --timestamp with time zone
     wind_speed float,
@@ -21,6 +16,7 @@ CREATE TABLE data (
 -- Index on timestamp for performance
 CREATE INDEX idx_data_timestamp ON data (timestamp);
 
+-- Populate with sample data
 INSERT INTO data
 SELECT
     ts AS timestamp,

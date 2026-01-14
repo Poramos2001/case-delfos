@@ -4,13 +4,12 @@ from dagster import (
     DailyPartitionsDefinition, define_asset_job, Definitions, EnvVar
     )
 import httpx
-import json
 import logging
-from etl.src.logging_config import setup_orchestration_logging
 import os
 from sqlalchemy.exc import IntegrityError
 from src.extract import extract_date_data, date_to_params
 from src.load import ensure_database, ensure_tables, load_data
+from src.logging_config import setup_orchestration_logging
 from src.transform import resample_10minute_blocks, pivot_to_long_format
 
 
@@ -130,10 +129,6 @@ etl_schedule = build_schedule_from_partitioned_job(
 )
 
 # --- FINAL DEFINITIONS ---
-
-# Load config once (optional, or pass via env vars)
-with open('config.json', 'r') as f:
-    config_data = json.load(f)
 
 defs = Definitions(
     assets=[daily_etl_asset],
