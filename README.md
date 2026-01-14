@@ -1,38 +1,15 @@
 # case-delfos
-precisa ter um super user e botar o login e senha dele no config.json
+This project implements a complete ETL pipeline containerized with Docker.
+It extracts data from a **Source Database** via a **FastAPI** service, transforms it using **Dagster** assets, and loads it into a **Target Database**.
 
-# TODO
-- containerizo com docker
+## Architecture
+* **source_db**: PostgreSQL (Pre-loaded with sample data).
+* **target_db**: PostgreSQL (Destination for transformed data).
+* **fastapi**: Middleware API that queries `source_db`.
+* **dagster**: Orchestrator that pulls from `fastapi` and writes to `target_db`.
 
-```bash
-# Source API Configuration
-SOURCE_API_URL=https://api.energy-source.com/v1/
-SOURCE_API_KEY=your_secret_api_token_123
 
-# Target Database (Postgres) Configuration
-PG_USER=postgres_user
-PG_PASSWORD=super_secure_password
-PG_DB=delfos-target
-PG_HOST=localhost
-PG_PORT=5432
-```
-
-```bash
-dagster dev -f definitions.py
-```
-```bash
-uvicorn api:app --port 8000
-```
----
-To containerize a project with Dagster, FastAPI, and a shared environment, you need an architecture that separates your concerns while allowing them to communicate.
-
-The standard production-ready pattern for Dagster in Docker involves splitting the "System" (UI and Daemon) from your "User Code" (ETL logic).
-
-Here is a step-by-step guide to setting up your architecture.
-
-### 1. Project Directory Structure
-
-First, organize your project so Docker contexts are clean. We will create separate folders for your API and your Dagster code.
+## Project Directory Structure
 
 ```text
 my-etl-project/
@@ -43,53 +20,128 @@ my-etl-project/
 ├── etl/                     # The Dagster Service
 │   ├── src/
 │   │   ├── extract.py
-│   │   ├── transform.py
-│   │   └── load.py
+│   │   ├── load.py
+│   │   ├── logging_config.py
+│   │   └── transform.py
+│   ├── dagster.yaml         # (Optional config to setup permanent psql DB)
 │   ├── definitions.py
 │   ├── Dockerfile
+│   ├── main.py              # Python script version of ETL
 │   ├── requirements.txt
-│   └── dagster.yaml         # (Optional config)
+│   └── wait-for-services.sh # Ensures right container building order
 ├── scripts/                 # Database init scripts
 │   └── create-source.sql
 ├── .env                     # Secrets (DB user, pass, etc.)
-└── docker-compose.yml       # The orchestrator
+└── docker-compose.yml
 
 ```
 
----
+## Prerequisites
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Compose plugin)
 
-### 5. Managing the `.env` File
 
-Ensure your `.env` file is in the root directory. Docker Compose handles the injection automatically via `env_file`.
+## Quick Start
 
-**Example `.env` content:**
+### 1. Configure Environment
+Create a `.env` file in the project root:
 
 ```ini
-# Credentials for your source database (used by FastAPI or ETL)
-SOURCE_DB_USER=admin
-SOURCE_DB_PASS=secret123
-SOURCE_DB_HOST=192.168.1.50 # Or external IP
+# Target Database (Postgres) Configuration
+TARGET_DB=delfos_target
+
+# Both Databases Credentials
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_PORT=5432
 
 ```
 
-### How to Run
+> **NOTICE:** The inserted database credentials **must belong to a superuser**
 
-1. **Build and Start:**
+### 2. Build and Run
+
+Run the stack using Docker Compose:
+
 ```bash
-docker-compose up --build
+docker compose up --build -d
 
 ```
 
+*Wait ~15 seconds for the databases to initialize and the API to become healthy.*
 
-2. **Access Dagster UI:**
-Open your browser to `http://localhost:3000`. You should see your code location listed and ready to run jobs.
-3. **Access FastAPI:**
-Open `http://localhost:8000/docs` to see your API Swagger documentation.
+## Usage - Run the ETL pipeline
 
-### Why this architecture?
+### Option A: The Dagster UI (Orchestrator)
 
-* **Decoupling:** If your ETL code crashes (e.g., OOM error), it crashes the `user_code` container, but the Dagster Webserver and Daemon stay alive.
-* **Networking:** The `user_code` container can talk to `fastapi_app` simply by using the hostname `http://fastapi_app:8000` inside your Python code.
-* **Persistence:** The `dagster_postgresql` container ensures that if you restart Docker, you don't lose your job history or backfills.
+Open the Dagster UI: **[http://localhost:3000](https://www.google.com/search?q=http://localhost:3000)**
 
-**Would you like me to explain how to make the Dagster ETL code communicate with the FastAPI container over the docker network?**
+1. Click **Overview** or **Assets** to see your asset graph.
+2. Click **Materialize All** (top right) to run the full pipeline.
+3. Once finished, the green status indicates data has been loaded into `target_db`.
+
+### Option B: The Manual Script (Ad-hoc)
+
+You can run the ETL logic manually via a standalone script included in the container. This bypasses the Dagster scheduler and runs immediately.
+
+```bash
+docker compose exec dagster python main.py 'DD-MM-YYYY'
+
+```
+
+*This executes `etl/main.py` inside the running environment, using the same logic and connections as the Dagster job.*
+
+
+## Verification
+
+### Check API Health
+
+Open your browser to: **[http://localhost:8000/docs](https://www.google.com/search?q=http://localhost:8000/docs)**
+
+* You should see the Swagger UI.
+* Try the `/health` endpoint to see the API status (on/offline).
+* Try the `/data` endpoint to ensure it can read from the Source DB.
+
+
+## Debugging & Management
+
+**View Logs**
+If something isn't working, check the logs for a specific service:
+
+```bash
+docker compose logs -f dagster
+# or
+docker compose logs -f fastapi
+
+```
+
+**Check Database Content**
+To verify data inside the containers without installing local tools:
+
+```bash
+# Check Source DB
+docker compose exec -it source_db psql -U myuser -d source_db -c "\dt"
+
+# Check Target DB (verify ETL results)
+docker compose exec -it target_db psql -U myuser -d postgres -c "SELECT * FROM power_data LIMIT 5;"
+
+```
+
+**Full Reset (Fixes most errors)**
+If your database schema changes or startup scripts fail, perform a clean reset:
+
+```bash
+# Stops containers and DELETES database volumes
+docker compose down -v 
+
+# Rebuilds and starts fresh
+docker compose up --build -d
+
+```
+
+## Troubleshooting
+
+**Permission Denied:** `./wait-for-services.sh**`
+If you see a permission error on startup:
+
+* **Mac/Linux:** Run `chmod +x etl/wait-for-services.sh` locally and rebuild.
+* **Windows:** Ensure your git client didn't convert line endings to CRLF.
