@@ -8,12 +8,7 @@ from typing import List, Optional, Any, Dict
 
 
 # Database configuration
-user = os.getenv("DB_USER")
-passwd = os.getenv("DB_PASSWORD")
-host = os.getenv("SOURCE_HOST")
-port = int(os.getenv("DB_PORT"))
-
-DATABASE_URL = f"postgresql+asyncpg://{user}:{passwd}@{host}:{port}/delfos_source"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
@@ -29,6 +24,7 @@ class WindData(Base):
     wind_speed = Column(Float)
     power = Column(Float)
     ambient_temperature = Column(Float)
+
 
 # Helper to validate column names securely
 VALID_COLUMNS = [c.key for c in inspect(WindData).mapper.column_attrs]

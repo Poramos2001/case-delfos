@@ -1,10 +1,10 @@
-dagster                1.12.10
-dagster-graphql        1.12.10
-dagster-pipes          1.12.10
-dagster-postgres       0.28.10
-dagster-shared         1.12.10
-dagster-webserver      1.12.10
-httpx                  0.28.1
-pandas                 2.3.3
-psycopg2-binary        2.9.11
-sqlalchemy             2.0.45
+dagster                
+dagster-graphql        
+dagster-pipes          
+dagster-postgres       
+dagster-shared         
+dagster-webserver      
+httpx                  
+pandas                 
+psycopg2-binary        
+sqlalchemy             

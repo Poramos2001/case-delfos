@@ -1,0 +1,2 @@
+# Force the startup script to always use Linux line endings (LF)
+etl/wait-for-services.sh text eol=lf

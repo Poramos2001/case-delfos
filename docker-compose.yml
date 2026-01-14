@@ -39,7 +39,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@source_db:5432/delfos_source
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@source_db:5432/delfos_source
     depends_on:
       - source_db
     networks:
@@ -57,6 +57,8 @@ services:
       TARGET_DB_HOST: target_db
       TARGET_DB_USER: ${DB_USER}
       TARGET_DB_PASSWORD: ${DB_PASSWORD}
+      TARGET_DB_PORT: ${DB_PORT}
+      TARGET_DB: ${TARGET_DB}
     depends_on:
       - fastapi
       - target_db

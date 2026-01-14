@@ -140,13 +140,13 @@ defs = Definitions(
     schedules=[etl_schedule],
     resources={
         "source_db_API": APIResource(
-            api_url=EnvVar("SOURCE_API_URL")
+            api_url=EnvVar("API_URL")
         ),
         "target_db": PostgresResource(
-            username=EnvVar("DB_USER"),
-            password=EnvVar("DB_PASSWORD"),
-            host=EnvVar("TARGET_HOST"),
-            port=int(os.getenv("DB_PORT")), # read port as int
+            username=EnvVar("TARGET_DB_USER"),
+            password=EnvVar("TARGET_DB_PASSWORD"),
+            host=EnvVar("TARGET_DB_HOST"),
+            port=int(os.getenv("TARGET_DB_PORT")), # read port as int
             db_name=EnvVar("TARGET_DB")
         )
     }

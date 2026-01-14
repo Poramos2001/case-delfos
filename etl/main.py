@@ -42,13 +42,13 @@ logger = logging.getLogger(__name__)
 if __name__ == "__main__":
     logger.info("Starting ETL process...")
 
-    API_URL = os.getenv("SOURCE_API_URL")
+    API_URL = os.getenv("API_URL", "http://localhost:8000")
 
     # Get DB connection credentials
-    user = os.getenv("DB_USER")
-    passwd = os.getenv("DB_PASSWORD")
-    host = os.getenv("TARGET_HOST")
-    port = int(os.getenv("DB_PORT"))
+    user = os.getenv("TARGET_DB_USER")
+    passwd = os.getenv("TARGET_DB_PASSWORD")
+    host = os.getenv("TARGET_DB_HOST", "localhost")
+    port = int(os.getenv("TARGET_DB_PORT"))
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Aggregate wind data for a specific date.")
